@@ -1,7 +1,9 @@
+import "dotenv/config";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 import { AuthenticatedRequest } from "../utils/customInterface";
+import { sendMail } from "../services/mailer";
 
 export const handleCreateNewUser = async (
   req: Request,
@@ -43,7 +45,7 @@ export const handleCreateNewUser = async (
           path: "/",
         });
 
-        res.json({
+        res.status(201).json({
           success: true,
           email: user.email,
           token: token,
@@ -89,7 +91,7 @@ export const handleLoginUser = async (
 
         res.cookie("token", token);
 
-        res.json({
+        res.status(200).json({
           success: true,
           email: user.email,
           token: token,
@@ -122,7 +124,7 @@ export const handleUpdateUser = async (
       Object.assign(user, updates);
       await user.save();
 
-      res.json({
+      res.status(200).json({
         success: true,
         message: "User updated successfully",
         user,
@@ -134,5 +136,43 @@ export const handleUpdateUser = async (
     }
   } else {
     res.status(401).json({ message: "Unauthorized" });
+  }
+};
+
+export const forgotPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    const secret = process.env.JWT_SECRET || "defaultSecret";
+
+    const token = jwt.sign({ id: user._id }, secret, {
+      expiresIn: "1h",
+    });
+
+    const resetLink = `${process.env.CLIENT_URL}/reset-password/${token}`;
+    await sendMail({
+      to: email,
+      subject: "Password Reset Request",
+      templateName: "forgotPassword",
+      context: {
+        username: user.username,
+        resetLink,
+      },
+    });
+
+    res
+      .status(200)
+      .json({ message: "Password reset link sent to your email." });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message });
   }
 };

@@ -62,7 +62,7 @@ export const handleGetLeads = async (
 
     const totalLeads = await Lead.countDocuments(filter);
 
-    res.json({
+    res.status(200).json({
       success: true,
       leads,
       pagination: {
@@ -94,7 +94,7 @@ export const handleDeleteLead = async (
       return;
     }
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: "Lead deleted successfully",
     });
@@ -131,7 +131,7 @@ export const handleUpdateLead = async (
       new: true,
     });
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: "Lead updated successfully",
       lead,
