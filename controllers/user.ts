@@ -9,23 +9,24 @@ export const handleCreateNewUser = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { name, email, password, username } = req.body;
-
+  let { email, password, username } = req.body;
+  email = email.toLowerCase();
+  username = username.toLowerCase();
   try {
     let user = await User.findOne({
       $or: [{ email: email }, { username: username }],
     });
 
     if (user) {
-      if (user.email === email) {
-        res.status(400).json({ message: "Email already exists" });
-      } else if (user.username === username) {
+      if (user.username === username) {
         res.status(400).json({ message: "Username already exists" });
+      } else if (user.email === email) {
+        res.status(400).json({ message: "Email already exists" });
       }
       return;
     }
 
-    user = new User({ name, email, password, username });
+    user = new User({ email, password, username });
     await user.save();
 
     const payload = {
@@ -49,7 +50,6 @@ export const handleCreateNewUser = async (
           success: true,
           email: user.email,
           token: token,
-          name: user.name,
           username: user.username,
         });
       }
@@ -68,7 +68,9 @@ export const handleLoginUser = async (
   const { username, password } = req.body;
 
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({
+      username: { $regex: new RegExp(`^${username}$`, "i") },
+    });
     if (!user) {
       res.status(404).json({ message: "User Not Found!" });
       return;
@@ -80,7 +82,7 @@ export const handleLoginUser = async (
       return;
     }
 
-    const payload = { id: user.id, username: user.username };
+    const payload = { id: user.id, username: user.username, email: user.email };
 
     jwt.sign(
       payload,
@@ -94,8 +96,8 @@ export const handleLoginUser = async (
         res.status(200).json({
           success: true,
           email: user.email,
+          username: user.username,
           token: token,
-          name: user.name,
         });
       }
     );
@@ -146,7 +148,9 @@ export const forgotPassword = async (
   const { email } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      email: { $regex: new RegExp(`^${email}$`, "i") },
+    });
     if (!user) {
       res.status(404).json({ message: "User not found" });
       return;
@@ -159,6 +163,7 @@ export const forgotPassword = async (
     });
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${token}`;
+
     await sendMail({
       to: email,
       subject: "Password Reset Request",

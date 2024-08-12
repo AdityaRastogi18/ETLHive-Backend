@@ -27,38 +27,37 @@ export const handleGetLeads = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const {
-    name,
-    email,
-    productName,
-    productID,
-    number,
-    sort = "asc",
-    page = "1",
-    limit = "10",
-  } = req.query;
+  const { page = "1", limit = "10", sort = "asc", search } = req.query;
+  const sortOrder = sort === "desc" ? -1 : 1;
+
+  const searchString = typeof search === "string" ? search : "";
+  const searchRegExp = searchString ? new RegExp(searchString, "i") : null;
+  const filter: any = {};
+
+  if (searchString) {
+    if (searchRegExp) {
+      filter.$or = [
+        { name: searchRegExp },
+        { email: searchRegExp },
+        { "product.productName": searchRegExp },
+        { "product.productID": searchRegExp },
+        { number: searchRegExp },
+      ];
+    }
+  }
 
   try {
-    const filter: any = {};
-
-    if (name) filter.name = { $regex: name, $options: "i" };
-    if (email) filter.email = { $regex: email, $options: "i" };
-    if (productName)
-      filter["product.productName"] = { $regex: productName, $options: "i" };
-    if (productID)
-      filter["product.productID"] = { $regex: productID, $options: "i" };
-    if (number) filter.number = { $regex: number, $options: "i" };
-
-    const sortOrder = sort === "asc" ? 1 : -1;
-
     const pageNumber = parseInt(page as string, 10);
     const limitNumber = parseInt(limit as string, 10);
     const skip = (pageNumber - 1) * limitNumber;
 
-    const leads = await Lead.find(filter)
-      .sort({ createdAt: sortOrder })
-      .skip(skip)
-      .limit(limitNumber);
+    const leads = await Lead.aggregate([
+      { $match: filter },
+      { $sort: { createdAt: sortOrder } },
+      { $skip: skip },
+      { $limit: limitNumber },
+      { $project: { numberOfSubjects: 0 } },
+    ]);
 
     const totalLeads = await Lead.countDocuments(filter);
 

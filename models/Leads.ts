@@ -8,7 +8,7 @@ interface Product {
 interface LeadDocument extends Document {
   name: string;
   email: string;
-  number: number;
+  number: string;
   product: Product;
 }
 
@@ -23,7 +23,7 @@ const leadSchema: Schema<LeadDocument> = new mongoose.Schema(
       required: true,
     },
     number: {
-      type: Number,
+      type: String,
       required: true,
     },
     product: {

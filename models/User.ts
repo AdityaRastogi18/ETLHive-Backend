@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 
 export interface UserDocument extends Document {
   username: string;
-  name: string;
   email: string;
   password: string;
   resetOtp?: string;
@@ -13,10 +12,6 @@ export interface UserDocument extends Document {
 
 const userSchema: Schema<UserDocument> = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
     username: {
       type: String,
       required: true,
@@ -43,17 +38,17 @@ userSchema.pre<UserDocument>("save", async function (next) {
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  this.username = this.username.toLowerCase();
+  this.email = this.email.toLowerCase();
   next();
 });
 
-// Compare password method
 userSchema.methods.matchPassword = async function (
   enteredPassword: string
 ): Promise<boolean> {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Create the User model
 const User: Model<UserDocument> = mongoose.model<UserDocument>(
   "User",
   userSchema

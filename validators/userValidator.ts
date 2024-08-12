@@ -3,9 +3,6 @@ import { check, validationResult } from "express-validator";
 import { customErrorFormatter } from "../utils/helperFunctions";
 
 export const validateRegistration = [
-  check("name")
-    .isLength({ min: 3 })
-    .withMessage("Name must be at least 3 characters long"),
   check("email").isEmail().withMessage("Invalid email address"),
   check("username")
     .isLength({ min: 3 })
@@ -25,7 +22,7 @@ export const validateRegistration = [
   (req: Request, res: Response, next: NextFunction) => {
     const errors: any = validationResult(req).formatWith(customErrorFormatter);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ message: errors.array()[0].message });
+      return res.status(400).json({ message: errors.array()[0].msg });
     }
     next();
   },

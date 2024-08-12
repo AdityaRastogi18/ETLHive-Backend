@@ -11,12 +11,12 @@ interface MailOptions {
 }
 
 const transporter = nodemailer.createTransport({
-  service: "gmail", // e.g., 'gmail'
+  service: process.env.MAIL_SERVICE,
   secure: true,
   port: 465,
   auth: {
-    user: "aditya.rastogi.880@gmail.com",
-    pass: "wpvadckeecubtcwx",
+    user: process.env.USER_EMAIL,
+    pass: process.env.USER_PASSWORD,
   },
 });
 
@@ -31,7 +31,7 @@ export const sendMail = async ({
     "../templates",
     `${templateName}.html`
   );
-  console.log("template path", templatePath);
+
   const source = fs.readFileSync(templatePath, "utf-8").toString();
   const template = handlebars.compile(source);
   const htmlToSend = template(context);
@@ -45,9 +45,7 @@ export const sendMail = async ({
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully!");
   } catch (err) {
-    console.error("Error sending email:", err);
     throw new Error("Could not send email.");
   }
 };
